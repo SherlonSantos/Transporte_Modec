@@ -319,11 +319,37 @@ export function sameDay(a: any, b: any): boolean {
   );
 }
 
+export function cleanDtValue(val: any): string {
+  if (val === null || val === undefined) return '';
+  let s = String(val).trim();
+  if (typeof val === 'number') {
+    if (Number.isInteger(val)) {
+      s = val.toString();
+    } else {
+      s = val.toFixed(0);
+    }
+  }
+  // Remove sufixo decimal residual se houver (ex: "1154605.0")
+  s = s.replace(/\.0+$/, '');
+  return s;
+}
+
+export function normalizeHeader(h: string): string {
+  return String(h ?? '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[º°]/g, 'o')
+    .replace(/[.\-_/]/g, ' ')
+    .replace(/\s+/g, ' ');
+}
+
 export function getValByHeader(headers: string[], row: any[], header: string, occ = 0): any {
   let found = -1;
-  const cleanHeader = header.trim().toLowerCase();
+  const cleanHeader = normalizeHeader(header);
   for (let i = 0; i < headers.length; i++) {
-    const h = String(headers[i] ?? '').trim().toLowerCase();
+    const h = normalizeHeader(headers[i]);
     if (h === cleanHeader) {
       found++;
       if (found === occ) return row[i];
@@ -338,10 +364,18 @@ export function buildRecordsFromModel(model: IngestionModel): TransportRecord[] 
     const rawItin = getValByHeader(headers, row, 'Itinerário do transporte') ?? getValByHeader(headers, row, 'Itiner.transporte') ?? '';
     const parsedItin = parseTransportItinerary(rawItin);
 
+    const rawDt =
+      getValByHeader(headers, row, 'Nº transporte') ??
+      getValByHeader(headers, row, 'N° transporte') ??
+      getValByHeader(headers, row, 'N transporte') ??
+      getValByHeader(headers, row, 'Transporte');
+
+    const dt = cleanDtValue(rawDt);
+
     const r: TransportRecord = {
       _row: i + 2,
       raw: row,
-      dt: String(getValByHeader(headers, row, 'Nº transporte') ?? getValByHeader(headers, row, 'N transporte') ?? ''),
+      dt,
       type: String(getValByHeader(headers, row, 'Tipo de transporte', 0) ?? ''),
       typeProcess: String(getValByHeader(headers, row, 'Tipo proc.trnsp') ?? ''),
       expeditionType: String(getValByHeader(headers, row, 'Tipo de expedição') ?? ''),

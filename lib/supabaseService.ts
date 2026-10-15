@@ -153,11 +153,13 @@ export async function fetchRecordsFromSupabase(): Promise<TransportRecord[] | nu
 }
 
 /**
- * Salva ou atualiza (upsert) ordens de transporte no Supabase em lotes
+ * Salva ordens de transporte no Supabase. Por padrão, substitui integralmente a base anterior
+ * para que o novo arquivo não se misture com registros legados.
  */
 export async function saveRecordsToSupabase(
   records: TransportRecord[],
-  filename = 'Upload Excel'
+  filename = 'Upload Excel',
+  replaceExisting = true
 ): Promise<{ success: boolean; count: number; error?: string }> {
   if (!isSupabaseConfigured || !supabase) {
     return { success: false, count: 0, error: 'Supabase não configurado nas variáveis de ambiente' };
@@ -177,6 +179,19 @@ export async function saveRecordsToSupabase(
     const rows = Array.from(rowMap.values());
     if (rows.length === 0) {
       return { success: false, count: 0, error: 'Nenhum registro com Nº de transporte válido foi encontrado.' };
+    }
+
+    // Se replaceExisting for verdadeiro, limpa todos os registros existentes antes de inserir a nova base
+    if (replaceExisting) {
+      const { error: delError } = await supabase
+        .from('transport_records')
+        .delete()
+        .neq('dt', '');
+
+      if (delError) {
+        console.error('Erro ao limpar base antiga no Supabase:', delError);
+        return { success: false, count: 0, error: `Falha ao substituir base antiga: ${delError.message}` };
+      }
     }
 
     const BATCH_SIZE = 200;

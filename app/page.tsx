@@ -184,18 +184,21 @@ export default function Home() {
   useEffect(() => {
     if (!isSupabaseConfigured || !supabase) return;
 
+    let debounceTimer: any = null;
     const channel = supabase
       .channel('transport_live_changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'transport_records' },
-        async payload => {
-          console.log('Realtime change received from Supabase:', payload);
-          const updated = await fetchRecordsFromSupabase();
-          if (updated && updated.length > 0) {
-            setSupabaseRecords(updated);
-            setIsRealtimeActive(true);
-          }
+        () => {
+          if (debounceTimer) clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(async () => {
+            const updated = await fetchRecordsFromSupabase();
+            if (updated && updated.length > 0) {
+              setSupabaseRecords(updated);
+              setIsRealtimeActive(true);
+            }
+          }, 1500);
         }
       )
       .subscribe(status => {
@@ -203,6 +206,7 @@ export default function Home() {
       });
 
     return () => {
+      if (debounceTimer) clearTimeout(debounceTimer);
       if (supabase) {
         supabase.removeChannel(channel);
       }
@@ -370,7 +374,17 @@ export default function Home() {
   const handleResetData = async () => {
     if (confirm('Deseja restaurar a base de dados inicial?')) {
       await clearModelFromStorage();
+      const initialRecs = buildRecordsFromModel(initialDataJson as IngestionModel);
       setModel(initialDataJson as IngestionModel);
+      setUploadedFilename('Base Inicial (Histórico)');
+      if (isSupabaseConfigured) {
+        setIsSyncingSupabase(true);
+        setSupabaseRecords(initialRecs);
+        await saveRecordsToSupabase(initialRecs, 'Restauração da Base Inicial', true);
+        setIsSyncingSupabase(false);
+      } else {
+        setSupabaseRecords(null);
+      }
     }
   };
 
@@ -800,7 +814,7 @@ export default function Home() {
 
           if (isSupabaseConfigured) {
             setIsSyncingSupabase(true);
-            const res = await saveRecordsToSupabase(newRecords, newModel.filename);
+            const res = await saveRecordsToSupabase(newRecords, newModel.filename, true);
             setIsSyncingSupabase(false);
             if (!res.success) {
               console.error('Falha ao persistir no Supabase:', res.error);

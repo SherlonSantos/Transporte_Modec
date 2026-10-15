@@ -32,6 +32,7 @@ export async function saveModelToStorage(model: IngestionModel): Promise<void> {
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
       const store = tx.objectStore(STORE_NAME);
+      store.clear();
       const req = store.put(model, MODEL_KEY);
       req.onsuccess = () => resolve();
       req.onerror = () => reject(req.error);

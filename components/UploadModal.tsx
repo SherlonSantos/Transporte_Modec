@@ -112,9 +112,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onDat
           </button>
         </div>
 
-        <p className="text-xs text-mro-muted mb-4 leading-relaxed">
+        <p className="text-xs text-mro-muted mb-3 leading-relaxed">
           Faça o upload da planilha extraída do SAP (formatos <b>.xlsx, .xls, .xlsm</b>). O sistema normaliza automaticamente os cabeçalhos e recalcula todos os SLAs e Kanbans em tempo real.
         </p>
+        <div className="mb-4 px-3 py-2 bg-blue-50/70 border border-blue-200/60 rounded-lg text-[11px] text-blue-900 flex items-center gap-2">
+          <span className="font-semibold text-mro-blue">Substituição Completa:</span>
+          <span>A nova planilha substituirá integralmente a base anterior, mantendo a numeração exata das DTs sem misturar dados históricos antigos.</span>
+        </div>
 
         {/* Dropzone */}
         <div
