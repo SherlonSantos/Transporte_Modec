@@ -44,6 +44,7 @@ export interface IngestionModel {
   filename: string;
   headers: string[];
   rows: any[][];
+  uploadedAt?: string;
 }
 
 export type RiskLevel = 'ok' | 'att' | 'crit';

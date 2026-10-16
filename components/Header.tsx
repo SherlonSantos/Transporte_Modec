@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { Upload, RotateCcw, Download, Radio, ChevronUp, ChevronDown, Ship, AlertTriangle, CalendarDays } from 'lucide-react';
-import { fmtDate } from '@/lib/calculations';
+import { fmtDate, fmtDateTime } from '@/lib/calculations';
 
 interface HeaderProps {
   filename: string;
@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = ({
             </span>
 
             <span className="bg-white/10 border border-white/15 px-3 py-1 rounded-full flex items-center gap-1.5">
-              Atualização Base: <strong className="text-white font-bold">{fmtDate(lastUpdate)}</strong>
+              Atualização Base: <strong className="text-white font-bold">{fmtDateTime(lastUpdate)}</strong>
             </span>
 
             <span className="bg-white/10 border border-white/15 px-3 py-1 rounded-full flex items-center gap-1.5">

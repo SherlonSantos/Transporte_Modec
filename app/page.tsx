@@ -64,6 +64,7 @@ export default function Home() {
   const [model, setModel] = useState<IngestionModel>(initialDataJson as IngestionModel);
   const [supabaseRecords, setSupabaseRecords] = useState<TransportRecord[] | null>(null);
   const [uploadedFilename, setUploadedFilename] = useState<string>('');
+  const [uploadedAt, setUploadedAt] = useState<string | null>(null);
   const [isSyncingSupabase, setIsSyncingSupabase] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'sla' | 'kanban' | 'schedule' | 'settings'>('dashboard');
   const [selectedDt, setSelectedDt] = useState<string | null>(null);
@@ -123,6 +124,7 @@ export default function Home() {
       .then(savedModel => {
         if (savedModel && savedModel.rows && savedModel.rows.length > 0) {
           setModel(savedModel);
+          if (savedModel.uploadedAt) setUploadedAt(savedModel.uploadedAt);
         }
       })
       .catch(err => {
@@ -154,7 +156,10 @@ export default function Home() {
 
       // Sync shared system settings from cloud
       fetchLatestUploadLog().then(log => {
-        if (log && log.filename) setUploadedFilename(log.filename);
+        if (log) {
+          if (log.filename) setUploadedFilename(log.filename);
+          if (log.uploadedAt) setUploadedAt(log.uploadedAt);
+        }
       });
       fetchSystemSetting<VesselMapping>('vessel_map').then(m => {
         if (m) setVesselMap(m);
@@ -193,10 +198,17 @@ export default function Home() {
         () => {
           if (debounceTimer) clearTimeout(debounceTimer);
           debounceTimer = setTimeout(async () => {
-            const updated = await fetchRecordsFromSupabase();
+            const [updated, latestLog] = await Promise.all([
+              fetchRecordsFromSupabase(),
+              fetchLatestUploadLog(),
+            ]);
             if (updated && updated.length > 0) {
               setSupabaseRecords(updated);
               setIsRealtimeActive(true);
+            }
+            if (latestLog) {
+              if (latestLog.filename) setUploadedFilename(latestLog.filename);
+              if (latestLog.uploadedAt) setUploadedAt(latestLog.uploadedAt);
             }
           }, 1500);
         }
@@ -271,14 +283,18 @@ export default function Home() {
     { value: 'good', label: 'Dentro do SLA' },
   ], []);
 
-  // Max modified date
+  // Latest upload date & time (or max modified date fallback)
   const lastUpdateDate = useMemo(() => {
+    if (uploadedAt) {
+      const parsed = new Date(uploadedAt);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
     const dates = records
       .map(r => r.modified || r.actualEnd || r.created)
       .filter((d): d is Date => d !== null)
       .sort((a, b) => b.getTime() - a.getTime());
     return dates.length > 0 ? dates[0] : null;
-  }, [records]);
+  }, [records, uploadedAt]);
 
   // Reference Date Object
   const refDateObj = useMemo(() => {
@@ -374,9 +390,11 @@ export default function Home() {
   const handleResetData = async () => {
     if (confirm('Deseja restaurar a base de dados inicial?')) {
       await clearModelFromStorage();
+      const nowIso = new Date().toISOString();
       const initialRecs = buildRecordsFromModel(initialDataJson as IngestionModel);
       setModel(initialDataJson as IngestionModel);
       setUploadedFilename('Base Inicial (Histórico)');
+      setUploadedAt(nowIso);
       if (isSupabaseConfigured) {
         setIsSyncingSupabase(true);
         setSupabaseRecords(initialRecs);
@@ -806,10 +824,13 @@ export default function Home() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onDataIngested={async newModel => {
-          setModel(newModel);
+          const nowIso = newModel.uploadedAt || new Date().toISOString();
+          const modelWithTimestamp = { ...newModel, uploadedAt: nowIso };
+          setModel(modelWithTimestamp);
           setUploadedFilename(newModel.filename);
-          await saveModelToStorage(newModel);
-          const newRecords = buildRecordsFromModel(newModel);
+          setUploadedAt(nowIso);
+          await saveModelToStorage(modelWithTimestamp);
+          const newRecords = buildRecordsFromModel(modelWithTimestamp);
           setSupabaseRecords(newRecords);
 
           if (isSupabaseConfigured) {

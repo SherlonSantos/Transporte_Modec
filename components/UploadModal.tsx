@@ -70,6 +70,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({ isOpen, onClose, onDat
         filename: file.name,
         headers,
         rows: dataRows,
+        uploadedAt: new Date().toISOString(),
       });
 
       setTimeout(() => {

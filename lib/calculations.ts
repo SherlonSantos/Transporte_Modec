@@ -32,6 +32,16 @@ export function fmtDate(d: any): string {
   return dt ? dt.toLocaleDateString('pt-BR') : '—';
 }
 
+export function fmtDateTime(d: any): string {
+  const dt = parseDate(d);
+  if (!dt) return '—';
+  const dateStr = dt.toLocaleDateString('pt-BR');
+  const hasTime = dt.getHours() !== 0 || dt.getMinutes() !== 0 || dt.getSeconds() !== 0;
+  if (!hasTime) return dateStr;
+  const timeStr = dt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  return `${dateStr} às ${timeStr}`;
+}
+
 export function isoDate(d: any): string {
   const dt = parseDate(d);
   if (!dt) return '';
