@@ -18,6 +18,7 @@ import {
   cumulativeActualAtStage,
   slaState,
 } from '@/lib/calculations';
+import { resolveUserType, userTypeColor } from '@/lib/userTypes';
 
 interface DtDetailModalProps {
   record: TransportRecord | null;
@@ -167,9 +168,12 @@ export const DtDetailModal: React.FC<DtDetailModalProps> = ({
     );
   };
 
+  const userTypeInfo = resolveUserType(record);
+
   const details: [string, string][] = [
     ['Status', `${record.status} — ${currentStageDef.name}`],
     ['Local / Embarcação', vesselName],
+    ['Tipo (Usuário)', userTypeInfo.type ? `${userTypeInfo.type} (via ${userTypeInfo.user})` : 'Não mapeado'],
     ['Cód. Itinerário SAP', record.route || '—'],
     ['Fornecedor', record.supplier || '—'],
     ['Tipo Transporte', record.type || '—'],
@@ -208,10 +212,16 @@ export const DtDetailModal: React.FC<DtDetailModalProps> = ({
         {/* Modal Header */}
         <div className="px-6 py-4 border-b border-mro-line flex items-center justify-between bg-mro-bg sticky top-0 z-10">
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 flex-wrap">
               <h2 className="text-xl font-black text-mro-navy">DT {record.dt}</h2>
               <span className="bg-mro-blue text-white text-xs font-bold px-2.5 py-0.5 rounded-full">
                 Status {record.status} — {currentStageDef.name}
+              </span>
+              <span
+                title={userTypeInfo.user ? `Identificado por ${userTypeInfo.source === 'created' ? 'Criado por' : 'Modificado por'}: ${userTypeInfo.user}` : undefined}
+                className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-black uppercase ${userTypeColor(userTypeInfo.type)}`}
+              >
+                {userTypeInfo.type || 'Não mapeado'}
               </span>
             </div>
             <p className="text-xs text-mro-muted mt-0.5 flex items-center gap-1.5">

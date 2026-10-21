@@ -28,6 +28,7 @@ import {
   transitDuration,
 } from '@/lib/calculations';
 import { InfoTooltip } from './InfoTooltip';
+import { resolveUserType, userTypeColor } from '@/lib/userTypes';
 
 interface KanbanTabProps {
   data: TransportRecord[];
@@ -128,6 +129,8 @@ export const KanbanTab: React.FC<KanbanTabProps> = ({
         'Itinerário Completo': r.itineraryDescription || '',
         'Fornecedor': r.supplier || '',
         'Criado por': r.createdBy || '',
+        'Modificado por': r.modifiedBy || '',
+        'Tipo (Usuário)': resolveUserType(r).type || 'Não mapeado',
         'Criado em': fmtDate(r.created),
         'Início Previsto Transporte': fmtDate(r.forecastStart),
         'Início Efetivo Transporte': fmtDate(r.actualStart),
@@ -296,9 +299,23 @@ export const KanbanTab: React.FC<KanbanTabProps> = ({
           </div>
         </div>
 
-        {/* Vessel / Unit */}
-        <div className="text-xs font-black text-mro-navy mt-1 truncate">
-          {vessel}
+        {/* Vessel / Unit + User Type Tag */}
+        <div className="flex items-center justify-between gap-2 mt-1">
+          <div className="text-xs font-black text-mro-navy truncate">{vessel}</div>
+          {(() => {
+            const ut = resolveUserType(r);
+            const tip = ut.type
+              ? `Tipo: ${ut.type} — usuário ${ut.user} (${ut.source === 'created' ? 'Criado por' : 'Modificado por'})`
+              : `Usuário não mapeado${ut.user ? `: ${ut.user}` : ''}`;
+            return (
+              <span
+                title={tip}
+                className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wide whitespace-nowrap ${userTypeColor(ut.type)}`}
+              >
+                {ut.type || 'Não mapeado'}
+              </span>
+            );
+          })()}
         </div>
 
         {/* SLA Block exactly as in v22 HTML */}
@@ -801,6 +818,7 @@ export const KanbanTab: React.FC<KanbanTabProps> = ({
                             <th className="py-3 px-3.5">Aging Etapa</th>
                             <th className="py-3 px-3.5">SLA Etapa</th>
                             <th className="py-3 px-3.5">SLA Global</th>
+                            <th className="py-3 px-3.5">Tipo</th>
                             <th className="py-3 px-3.5">Tipo Expedição</th>
                             <th className="py-3 px-3.5">Rota</th>
                             <th className="py-3 px-3.5">Criada em</th>
@@ -841,6 +859,19 @@ export const KanbanTab: React.FC<KanbanTabProps> = ({
                                   }`}>
                                     {p.globalState.icon} {p.globalState.klass === 'good' ? 'Dentro SLA' : p.globalState.klass === 'bad' ? 'Fora SLA' : 'Sem base'}
                                   </span>
+                                </td>
+                                <td className="py-2.5 px-3.5">
+                                  {(() => {
+                                    const ut = resolveUserType(r);
+                                    return (
+                                      <span
+                                        title={ut.user ? `Usuário: ${ut.user}` : undefined}
+                                        className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[9px] font-black uppercase whitespace-nowrap ${userTypeColor(ut.type)}`}
+                                      >
+                                        {ut.type || 'Não mapeado'}
+                                      </span>
+                                    );
+                                  })()}
                                 </td>
                                 <td className="py-2.5 px-3.5 font-bold text-slate-700">{r.expeditionType || '—'}</td>
                                 <td className="py-2.5 px-3.5 text-slate-600 truncate max-w-[180px]" title={r.route}>
