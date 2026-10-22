@@ -310,7 +310,7 @@ export const KanbanTab: React.FC<KanbanTabProps> = ({
             return (
               <span
                 title={tip}
-                className={`shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-md border text-[9px] font-black uppercase tracking-wide whitespace-nowrap ${userTypeColor(ut.type)}`}
+                className={`shrink-0 inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg border text-[10px] font-black uppercase tracking-wider whitespace-nowrap shadow-2xs ${userTypeColor(ut.type)}`}
               >
                 {ut.type || 'Não mapeado'}
               </span>
@@ -866,7 +866,7 @@ export const KanbanTab: React.FC<KanbanTabProps> = ({
                                     return (
                                       <span
                                         title={ut.user ? `Usuário: ${ut.user}` : undefined}
-                                        className={`inline-flex items-center px-1.5 py-0.5 rounded-md border text-[9px] font-black uppercase whitespace-nowrap ${userTypeColor(ut.type)}`}
+                                        className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg border text-[10px] font-black uppercase tracking-wider whitespace-nowrap shadow-2xs ${userTypeColor(ut.type)}`}
                                       >
                                         {ut.type || 'Não mapeado'}
                                       </span>

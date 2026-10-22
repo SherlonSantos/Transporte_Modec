@@ -87,22 +87,23 @@ export const USER_TYPE_MAP: Record<string, string> = {
   WRANGEL: 'BACKLOAD',
 };
 
-/** Classes Tailwind de cor para cada tipo de etiqueta */
+/** Classes Tailwind de cor e estilo da etiqueta (conforme modelo da imagem "LOAD": bg-blue-100, text-blue-800, border-blue-300) */
 export const USER_TYPE_COLORS: Record<string, string> = {
-  'IMPORTAÇÃO': 'bg-indigo-100 text-indigo-800 border-indigo-300',
+  'IMPORTAÇÃO': 'bg-blue-100 text-blue-800 border-blue-300',
   'LOAD': 'bg-blue-100 text-blue-800 border-blue-300',
-  'BACKLOAD': 'bg-orange-100 text-orange-800 border-orange-300',
-  'TRANSF. ENTRE BASES': 'bg-teal-100 text-teal-800 border-teal-300',
-  'TRANSPORTE': 'bg-cyan-100 text-cyan-800 border-cyan-300',
-  'AVALIAR': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  'ANALISTA MODEC': 'bg-purple-100 text-purple-800 border-purple-300',
-  'FORNECEDOR': 'bg-pink-100 text-pink-800 border-pink-300',
-  'FATURAMENTO': 'bg-emerald-100 text-emerald-800 border-emerald-300',
-  'CONTRATOS': 'bg-rose-100 text-rose-800 border-rose-300',
-  'ENGENHEIRO': 'bg-lime-100 text-lime-800 border-lime-300',
+  'BACKLOAD': 'bg-blue-100 text-blue-800 border-blue-300',
+  'TRANSF. ENTRE BASES': 'bg-blue-100 text-blue-800 border-blue-300',
+  'TRANSPORTE': 'bg-blue-100 text-blue-800 border-blue-300',
+  'AVALIAR': 'bg-blue-100 text-blue-800 border-blue-300',
+  'ANALISTA MODEC': 'bg-blue-100 text-blue-800 border-blue-300',
+  'FORNECEDOR': 'bg-blue-100 text-blue-800 border-blue-300',
+  'FATURAMENTO': 'bg-blue-100 text-blue-800 border-blue-300',
+  'CONTRATOS': 'bg-blue-100 text-blue-800 border-blue-300',
+  'ENGENHEIRO': 'bg-blue-100 text-blue-800 border-blue-300',
 };
 
-const DEFAULT_COLOR = 'bg-slate-100 text-slate-600 border-slate-300';
+const DEFAULT_MAPPED_COLOR = 'bg-blue-100 text-blue-800 border-blue-300';
+const DEFAULT_UNMAPPED_COLOR = 'bg-slate-100 text-slate-600 border-slate-300';
 
 export interface UserTypeInfo {
   type: string | null;
@@ -128,5 +129,6 @@ export function resolveUserType(r: Pick<TransportRecord, 'createdBy' | 'modified
 }
 
 export function userTypeColor(type: string | null): string {
-  return (type && USER_TYPE_COLORS[type]) || DEFAULT_COLOR;
+  if (!type) return DEFAULT_UNMAPPED_COLOR;
+  return USER_TYPE_COLORS[type] || DEFAULT_MAPPED_COLOR;
 }

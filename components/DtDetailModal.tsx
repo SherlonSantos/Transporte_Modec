@@ -219,7 +219,7 @@ export const DtDetailModal: React.FC<DtDetailModalProps> = ({
               </span>
               <span
                 title={userTypeInfo.user ? `Identificado por ${userTypeInfo.source === 'created' ? 'Criado por' : 'Modificado por'}: ${userTypeInfo.user}` : undefined}
-                className={`inline-flex items-center px-2 py-0.5 rounded-full border text-[11px] font-black uppercase ${userTypeColor(userTypeInfo.type)}`}
+                className={`inline-flex items-center justify-center px-2.5 py-0.5 rounded-lg border text-[11px] font-black uppercase tracking-wider shadow-2xs ${userTypeColor(userTypeInfo.type)}`}
               >
                 {userTypeInfo.type || 'Não mapeado'}
               </span>
