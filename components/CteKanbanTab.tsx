@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import {
   FileText,
   Layers,
-  ArrowUpDown,
+  ArrowDownWideNarrow,
+  ArrowUpNarrowWide,
   Clock,
   RotateCcw,
   Sparkles,
+  Info,
+  Download,
 } from 'lucide-react';
 import initialCteDataJson from '@/data/initialCteData.json';
 import {
@@ -21,6 +25,7 @@ import {
   calculateCteMetrics,
   groupCtesByDt,
   getCteAgeDays,
+  fmtDateBr,
 } from '@/lib/cteCalculations';
 import {
   loadCteModelFromStorage,
@@ -123,6 +128,17 @@ export const CteKanbanTab: React.FC = () => {
       [bucketId]: prev[bucketId] === 'asc' ? 'desc' : 'asc',
     }));
   };
+
+  const handleSetAllSort = (order: 'desc' | 'asc') => {
+    const next: Record<number, 'desc' | 'asc'> = {};
+    CTE_KANBAN_BUCKETS.forEach(b => {
+      next[b.id] = order;
+    });
+    setSortOrders(next);
+  };
+
+  const isAllDesc = CTE_KANBAN_BUCKETS.every(b => (sortOrders[b.id] || 'desc') === 'desc');
+  const isAllAsc = CTE_KANBAN_BUCKETS.every(b => sortOrders[b.id] === 'asc');
 
   // Base completa de registros
   const allRecords = model.records;
@@ -309,6 +325,36 @@ export const CteKanbanTab: React.FC = () => {
     }));
   };
 
+  // Exportar dados de uma etapa específica para Excel
+  const handleExportBucketExcel = (bucketId: number) => {
+    const bucket = CTE_KANBAN_BUCKETS.find(b => b.id === bucketId);
+    const records = bucketCteRecords[bucketId] || [];
+
+    const rowsOut = records.map(r => ({
+      'DT': r.dt,
+      'CT-e': r.cte,
+      'Status Kanban': r.statusKanban,
+      'Status Original': r.originalStatus,
+      'Embarcação / Navio': r.vessel,
+      'Base Operacional': r.base,
+      'Tipo de Fluxo': r.flowType,
+      'Data de Emissão': fmtDateBr(r.emissionDate),
+      'Aging (Dias)': getCteAgeDays(r.emissionDate) ?? '',
+      'Valor Frete (R$)': r.freightValue ?? '',
+      'PO': r.po,
+      'MIGO': r.migo,
+      'Pendências / Erros': r.errors,
+      'Próxima Ação': r.detailNextAction,
+      'Situação': r.kanbanSituation,
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rowsOut);
+    const wb = XLSX.utils.book_new();
+    const sheetName = (bucket ? `Etapa_${bucket.id}_${bucket.name}` : `Etapa_${bucketId}`).slice(0, 31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    XLSX.writeFile(wb, `kanban_faturamento_${sheetName}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
       {/* Barra de Título da Aba com Ações Rápidas */}
@@ -364,11 +410,69 @@ export const CteKanbanTab: React.FC = () => {
         totalBaseRecords={allRecords.length}
       />
 
+      {/* Barra de Contexto e Ordenação Global (Padrão exato do Kanban de Transporte) */}
+      <div className="space-y-2.5">
+        <div className="p-3 bg-blue-50/70 border border-blue-200/80 rounded-xl text-xs text-blue-950 flex items-start gap-2">
+          <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+          <span className="leading-relaxed">
+            <b>Kanban de Faturamento:</b> O tempo no topo do cartão indica o aging desde a emissão ou tempo na etapa. As cores na borda lateral sinalizam o status de risco e cumprimento de prazos.
+          </span>
+        </div>
+
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 px-2 py-1 rounded-lg">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">
+                Ordenar todas:
+              </span>
+              <button
+                type="button"
+                onClick={() => handleSetAllSort('desc')}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                  isAllDesc
+                    ? 'bg-mro-navy text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/70'
+                }`}
+                title="Ordenar todas as colunas pelo Maior Aging primeiro"
+              >
+                <ArrowDownWideNarrow className="w-3 h-3" />
+                Maior Aging
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetAllSort('asc')}
+                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                  isAllAsc
+                    ? 'bg-mro-navy text-white shadow-xs'
+                    : 'text-slate-600 hover:bg-slate-200/70'
+                }`}
+                title="Ordenar todas as colunas pelo Menor Aging primeiro"
+              >
+                <ArrowUpNarrowWide className="w-3 h-3" />
+                Menor Aging
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs">
+              <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> No prazo
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Atenção
+              </span>
+              <span className="flex items-center gap-1.5 text-slate-600 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500" /> Crítico
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Kanban Board com Rolagem Horizontal (8 Buckets) */}
       <div className="overflow-x-auto pb-6">
         <div className="grid grid-cols-8 gap-3.5 min-w-[2600px] items-start">
           {CTE_KANBAN_BUCKETS.map(bucket => {
-            const isDesc = sortOrders[bucket.id] !== 'asc';
+            const isDesc = (sortOrders[bucket.id] || 'desc') !== 'asc';
             const itemsCount =
               viewMode === 'cte'
                 ? bucketCteRecords[bucket.id]?.length || 0
@@ -379,41 +483,65 @@ export const CteKanbanTab: React.FC = () => {
                 key={bucket.id}
                 className="bg-slate-100/90 rounded-2xl border border-slate-200/90 min-h-[680px] max-h-[820px] flex flex-col shadow-xs"
               >
-                {/* Cabeçalho do Bucket com Azul Escuro MRO */}
-                <div className="p-3 bg-mro-navy text-white rounded-t-2xl shadow-xs">
-                  <div className="flex items-center justify-between gap-1.5">
+                {/* Cabeçalho do Bucket com Fundo Claro / Branco e Clean (Padrão Kanban de Transporte) */}
+                <div className="p-3 bg-white rounded-t-2xl border-b border-slate-200 sticky top-0 z-10 shadow-xs">
+                  <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-5 h-5 rounded-full bg-white/20 text-white text-[11px] font-black grid place-items-center shrink-0">
-                        {bucket.id === 99 ? '?' : bucket.id}
-                      </span>
-                      <h4 className="font-black text-xs text-white truncate" title={bucket.name}>
-                        {bucket.name}
+                      <h4 className="font-black text-xs text-mro-navy truncate" title={bucket.name}>
+                        {bucket.id === 99 ? '?' : bucket.id} — {bucket.name}
                       </h4>
                     </div>
 
-                    <span className="bg-white/20 text-white font-black text-xs px-2 py-0.5 rounded-full min-w-6 text-center">
+                    <span className="bg-mro-navy text-white text-[11px] font-black px-2 py-0.5 rounded-full min-w-6 text-center shrink-0 shadow-xs">
                       {itemsCount}
                     </span>
                   </div>
 
-                  <p className="text-[10px] text-blue-200/80 mt-1 line-clamp-1 leading-tight" title={bucket.description}>
+                  <p className="text-[10px] text-mro-muted mt-1 leading-tight line-clamp-2" title={bucket.description}>
                     {bucket.description}
                   </p>
 
-                  {/* Ordenador do Bucket */}
-                  <div className="mt-2 pt-1.5 border-t border-white/10 flex items-center justify-between text-[10px]">
-                    <span className="text-blue-200/70 font-semibold uppercase tracking-wider text-[9px]">
-                      {viewMode === 'cte' ? 'CT-es na etapa' : 'DTs na etapa'}
+                  {/* Controle de Ordenação da Coluna e Exportação Direta */}
+                  <div className="mt-2 pt-2 border-t border-slate-100 flex items-center justify-between gap-1.5">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      Aging:
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleToggleColumnSort(bucket.id)}
-                      className="flex items-center gap-1 text-white/90 hover:text-white font-bold bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-md transition-colors"
-                      title={isDesc ? 'Ordenado por maior tempo' : 'Ordenado por menor tempo'}
-                    >
-                      <ArrowUpDown className="w-2.5 h-2.5" />
-                      <span>{isDesc ? 'Maior tempo' : 'Menor tempo'}</span>
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleColumnSort(bucket.id)}
+                        title={`Ordenar por ${isDesc ? 'Menor Aging (crescente)' : 'Maior Aging (decrescente)'}`}
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black transition-all border ${
+                          isDesc
+                            ? 'bg-amber-50 text-amber-900 border-amber-200 hover:bg-amber-100'
+                            : 'bg-blue-50 text-blue-900 border-blue-200 hover:bg-blue-100'
+                        }`}
+                      >
+                        {isDesc ? (
+                          <>
+                            <ArrowDownWideNarrow className="w-3.5 h-3.5 text-amber-700" />
+                            <span>Maior Aging ↓</span>
+                          </>
+                        ) : (
+                          <>
+                            <ArrowUpNarrowWide className="w-3.5 h-3.5 text-blue-700" />
+                            <span>Menor Aging ↑</span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleExportBucketExcel(bucket.id);
+                        }}
+                        title={`Exportar etapa "${bucket.name}" para Excel`}
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -456,41 +584,37 @@ export const CteKanbanTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Análises Gráficas (Distribuição, Evolução, Ranking, Motivos de Pendência) */}
+      {/* Gráficos Analíticos Integrados */}
       <CteCharts
         records={filteredRecords}
-        onFilterStatus={handleFilterByStatus}
-        onFilterVessel={handleFilterByVessel}
+        onSelectStatus={handleFilterByStatus}
+        onSelectVessel={handleFilterByVessel}
       />
 
-      {/* Tabela Analítica Completa com Busca, Ordenação e Exportações Excel/PDF */}
-      <CteTable
-        records={filteredRecords}
-        onSelectRecord={setSelectedRecord}
-      />
+      {/* Tabela Analítica e Exportação */}
+      <CteTable records={filteredRecords} onSelectRecord={setSelectedRecord} />
 
-      {/* Modais */}
-      {/* 1. Modal de Detalhes do CT-e */}
+      {/* Modal de Detalhamento do CT-e / DT */}
       <CteDetailModal
         record={selectedRecord}
         allRecords={allRecords}
         onClose={() => setSelectedRecord(null)}
-        onSelectRecord={setSelectedRecord}
+        onSelectSiblingCte={setSelectedRecord}
       />
 
-      {/* 2. Modal de Upload da Base de CT-e */}
+      {/* Modal de Upload de Nova Planilha de CT-es */}
       <CteUploadModal
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onDataIngested={handleDataIngested}
       />
 
-      {/* 3. Modal de Parâmetros de SLA por Etapa */}
+      {/* Modal de Parametrização de SLA por Etapa */}
       <CteSlaConfigModal
         isOpen={isSlaModalOpen}
         onClose={() => setIsSlaModalOpen(false)}
-        configs={slaConfigs}
-        onSaveConfigs={handleSaveSlaConfigs}
+        currentConfigs={slaConfigs}
+        onSave={handleSaveSlaConfigs}
       />
     </div>
   );
