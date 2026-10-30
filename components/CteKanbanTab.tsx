@@ -12,6 +12,7 @@ import {
   Sparkles,
   Info,
   Download,
+  Plus,
 } from 'lucide-react';
 import initialCteDataJson from '@/data/initialCteData.json';
 import {
@@ -19,6 +20,7 @@ import {
   CteFilterState,
   CteSlaConfig,
   CteIngestionModel,
+  CteDtSummary,
 } from '@/lib/cteTypes';
 import { CTE_KANBAN_BUCKETS } from '@/lib/cteDictionary';
 import {
@@ -55,6 +57,9 @@ export const CteKanbanTab: React.FC = () => {
   // Modo de exibição: 'cte' (por CT-e) ou 'dt' (consolidado por DT)
   const [viewMode, setViewMode] = useState<'cte' | 'dt'>('cte');
 
+  // Quantidade visível inicial por bucket (40 cards por padrão para performance instantânea sem travar o browser)
+  const [visibleCountByBucket, setVisibleCountByBucket] = useState<Record<number, number>>({});
+
   // Configurações de SLA
   const [slaConfigs, setSlaConfigs] = useState<Record<number, CteSlaConfig>>({});
 
@@ -76,6 +81,21 @@ export const CteKanbanTab: React.FC = () => {
     situations: [],
     slaStatus: [],
   });
+
+  // Limite por bucket: padrão 40 cards para garantir 60fps e zero travamento
+  const getLimitForBucket = (bucketId: number) => visibleCountByBucket[bucketId] || 40;
+
+  const handleShowMore = (bucketId: number) => {
+    setVisibleCountByBucket(prev => ({
+      ...prev,
+      [bucketId]: (prev[bucketId] || 40) + 40,
+    }));
+  };
+
+  // Resetar paginação ao alterar filtros ou modo de visão
+  useEffect(() => {
+    setVisibleCountByBucket({});
+  }, [filters, viewMode]);
 
   // Carrega modelo persistido e preferências locais
   useEffect(() => {
@@ -473,10 +493,14 @@ export const CteKanbanTab: React.FC = () => {
         <div className="grid grid-cols-8 gap-3.5 min-w-[2600px] items-start">
           {CTE_KANBAN_BUCKETS.map(bucket => {
             const isDesc = (sortOrders[bucket.id] || 'desc') !== 'asc';
-            const itemsCount =
-              viewMode === 'cte'
-                ? bucketCteRecords[bucket.id]?.length || 0
-                : bucketDtSummaries[bucket.id]?.length || 0;
+            const allCteItems = bucketCteRecords[bucket.id] || [];
+            const allDtItems = bucketDtSummaries[bucket.id] || [];
+            const totalItemsCount = viewMode === 'cte' ? allCteItems.length : allDtItems.length;
+
+            const limit = getLimitForBucket(bucket.id);
+            const displayedCte = allCteItems.slice(0, limit);
+            const displayedDt = allDtItems.slice(0, limit);
+            const remainingCount = totalItemsCount - limit;
 
             return (
               <div
@@ -493,7 +517,7 @@ export const CteKanbanTab: React.FC = () => {
                     </div>
 
                     <span className="bg-mro-navy text-white text-[11px] font-black px-2 py-0.5 rounded-full min-w-6 text-center shrink-0 shadow-xs">
-                      {itemsCount}
+                      {totalItemsCount}
                     </span>
                   </div>
 
@@ -545,32 +569,56 @@ export const CteKanbanTab: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Conteúdo com Rolagem dos Cards */}
+                {/* Conteúdo com Rolagem dos Cards e Paginação Progressiva Fluida */}
                 <div className="p-2.5 space-y-2.5 overflow-y-auto flex-1">
                   {viewMode === 'cte' ? (
-                    bucketCteRecords[bucket.id] && bucketCteRecords[bucket.id].length > 0 ? (
-                      bucketCteRecords[bucket.id].map(record => (
-                        <CteKanbanCard
-                          key={record.id}
-                          record={record}
-                          slaConfig={slaConfigs[bucket.id]}
-                          onSelect={setSelectedRecord}
-                        />
-                      ))
+                    displayedCte.length > 0 ? (
+                      <>
+                        {displayedCte.map(record => (
+                          <CteKanbanCard
+                            key={record.id}
+                            record={record}
+                            slaConfig={slaConfigs[bucket.id]}
+                            onSelect={setSelectedRecord}
+                          />
+                        ))}
+                        {remainingCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleShowMore(bucket.id)}
+                            className="w-full py-2.5 bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 rounded-xl text-xs font-black text-mro-navy transition-all shadow-2xs hover:shadow-xs flex items-center justify-center gap-1.5"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-mro-blue" />
+                            <span>Mostrar mais 40 ({remainingCount} restantes)</span>
+                          </button>
+                        )}
+                      </>
                     ) : (
                       <div className="h-36 grid place-items-center text-center text-slate-400 text-xs">
                         Nenhum CT-e nesta etapa
                       </div>
                     )
                   ) : (
-                    bucketDtSummaries[bucket.id] && bucketDtSummaries[bucket.id].length > 0 ? (
-                      bucketDtSummaries[bucket.id].map(summary => (
-                        <CteDtCard
-                          key={summary.dt}
-                          summary={summary}
-                          onSelectCte={setSelectedRecord}
-                        />
-                      ))
+                    displayedDt.length > 0 ? (
+                      <>
+                        {displayedDt.map(summary => (
+                          <CteDtCard
+                            key={summary.dt}
+                            summary={summary}
+                            onSelectCte={setSelectedRecord}
+                          />
+                        ))}
+                        {remainingCount > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => handleShowMore(bucket.id)}
+                            className="w-full py-2.5 bg-white hover:bg-blue-50/70 border border-slate-200 hover:border-blue-300 rounded-xl text-xs font-black text-mro-navy transition-all shadow-2xs hover:shadow-xs flex items-center justify-center gap-1.5"
+                          >
+                            <Plus className="w-3.5 h-3.5 text-mro-blue" />
+                            <span>Mostrar mais 40 ({remainingCount} restantes)</span>
+                          </button>
+                        )}
+                      </>
                     ) : (
                       <div className="h-36 grid place-items-center text-center text-slate-400 text-xs">
                         Nenhuma DT consolidada nesta etapa
