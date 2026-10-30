@@ -103,5 +103,6 @@ export interface CteIngestionModel {
   filename: string;
   uploadedAt: string;
   recordCount: number;
+  totalCount?: number;
   records: CteRecord[];
 }

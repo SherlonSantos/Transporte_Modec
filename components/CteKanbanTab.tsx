@@ -58,7 +58,7 @@ import { CteSlaConfigModal } from './cte/CteSlaConfigModal';
 
 export const CteKanbanTab: React.FC = () => {
   // Modelo de dados de CT-e (Inicialmente do JSON local, com restauração do IndexedDB)
-  const [model, setModel] = useState<CteIngestionModel>(initialCteDataJson as CteIngestionModel);
+  const [model, setModel] = useState<CteIngestionModel>(initialCteDataJson as unknown as CteIngestionModel);
   const [selectedRecord, setSelectedRecord] = useState<CteRecord | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isSlaModalOpen, setIsSlaModalOpen] = useState(false);
