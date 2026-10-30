@@ -32,6 +32,7 @@ interface CteFiltersProps {
   // Ações
   onOpenUpload: () => void;
   onOpenSlaConfig: () => void;
+  onResetBase?: () => void;
   totalFilteredRecords: number;
   totalBaseRecords: number;
 }
@@ -51,6 +52,7 @@ export const CteFilters: React.FC<CteFiltersProps> = ({
   slaOptions,
   onOpenUpload,
   onOpenSlaConfig,
+  onResetBase,
   totalFilteredRecords,
   totalBaseRecords,
 }) => {
@@ -121,6 +123,18 @@ export const CteFilters: React.FC<CteFiltersProps> = ({
             <SlidersHorizontal className="w-3.5 h-3.5 text-mro-blue" />
             Configurar SLA
           </button>
+
+          {onResetBase && (
+            <button
+              type="button"
+              onClick={onResetBase}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors"
+              title="Restaurar base inicial de CT-es"
+            >
+              <RotateCcw className="w-3.5 h-3.5 text-slate-500" />
+              Restaurar Base
+            </button>
+          )}
 
           <button
             type="button"

@@ -474,40 +474,7 @@ export const CteKanbanTab: React.FC = () => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-200">
-      {/* Barra de Título da Aba com Ações Rápidas */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-mro-line">
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-black text-mro-navy">
-              Kanban de Faturamento & Gestão de CT-es
-            </h2>
-            <span className="bg-mro-green/20 text-emerald-900 border border-mro-green/40 text-[11px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-700" />
-              Módulo Ativo
-            </span>
-          </div>
-          <p className="text-xs text-mro-muted mt-0.5">
-            Acompanhamento integrado de CT-es, pendências operacionais, conciliação e faturamento vinculado às DTs
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={handleResetToInitial}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold shadow-2xs transition-colors"
-            title="Restaurar base de CT-es inicial"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            Restaurar Base Inicial
-          </button>
-        </div>
-      </div>
-
-      {/* Indicadores Gerenciais (KPIs do Topo) */}
-      <CteKpis metrics={metrics} onFilterStatus={handleFilterByStatus} />
-
-      {/* Barra de Filtros com MultiSelect e Alternador de Visão */}
+      {/* Barra de Filtros com MultiSelect e Alternador de Visão (Inicia diretamente nos Filtros) */}
       <CteFilters
         filters={filters}
         onChangeFilters={setFilters}
@@ -523,6 +490,7 @@ export const CteKanbanTab: React.FC = () => {
         slaOptions={slaOptions}
         onOpenUpload={() => setIsUploadModalOpen(true)}
         onOpenSlaConfig={() => setIsSlaModalOpen(true)}
+        onResetBase={handleResetToInitial}
         totalFilteredRecords={filteredRecords.length}
         totalBaseRecords={allRecords.length}
       />
