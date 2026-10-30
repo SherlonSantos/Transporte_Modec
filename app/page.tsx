@@ -11,6 +11,7 @@ import {
   Search,
   Filter,
   RefreshCw,
+  ReceiptText,
 } from 'lucide-react';
 import initialDataJson from '@/data/initialData.json';
 import { Header } from '@/components/Header';
@@ -19,6 +20,7 @@ import { SlaTab } from '@/components/SlaTab';
 import { KanbanTab } from '@/components/KanbanTab';
 import { ScheduleTab } from '@/components/ScheduleTab';
 import { SettingsTab } from '@/components/SettingsTab';
+import { CteKanbanTab } from '@/components/CteKanbanTab';
 import { DtDetailModal } from '@/components/DtDetailModal';
 import { UploadModal } from '@/components/UploadModal';
 import { IssuesModal } from '@/components/IssuesModal';
@@ -66,7 +68,7 @@ export default function Home() {
   const [uploadedFilename, setUploadedFilename] = useState<string>('');
   const [uploadedAt, setUploadedAt] = useState<string | null>(null);
   const [isSyncingSupabase, setIsSyncingSupabase] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'sla' | 'kanban' | 'schedule' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'sla' | 'kanban' | 'schedule' | 'cte' | 'settings'>('dashboard');
   const [selectedDt, setSelectedDt] = useState<string | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [activeIssuesModal, setActiveIssuesModal] = useState<'chronology' | 'no_forecast' | null>(null);
@@ -100,7 +102,7 @@ export default function Home() {
   useEffect(() => {
     try {
       const savedTab = localStorage.getItem('modec_activeTab') as any;
-      if (savedTab && ['dashboard', 'sla', 'kanban', 'schedule', 'settings'].includes(savedTab)) {
+      if (savedTab && ['dashboard', 'sla', 'kanban', 'schedule', 'cte', 'settings'].includes(savedTab)) {
         setActiveTab(savedTab);
       }
 
@@ -176,7 +178,7 @@ export default function Home() {
     }
   }, []);
 
-  const handleTabChange = (tab: 'dashboard' | 'sla' | 'kanban' | 'schedule' | 'settings') => {
+  const handleTabChange = (tab: 'dashboard' | 'sla' | 'kanban' | 'schedule' | 'cte' | 'settings') => {
     setActiveTab(tab);
     try {
       localStorage.setItem('modec_activeTab', tab);
@@ -501,6 +503,18 @@ export default function Home() {
           </button>
 
           <button
+            onClick={() => handleTabChange('cte')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
+              activeTab === 'cte'
+                ? 'bg-mro-navy text-white shadow-md'
+                : 'bg-white hover:bg-slate-100 text-slate-700 border border-mro-line'
+            }`}
+          >
+            <ReceiptText className="w-4 h-4" />
+            Kanban Faturamento (CT-e)
+          </button>
+
+          <button
             onClick={() => handleTabChange('schedule')}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all ${
               activeTab === 'schedule'
@@ -526,7 +540,7 @@ export default function Home() {
         </div>
 
         {/* Global Filter Bar */}
-        {activeTab !== 'settings' && (
+        {activeTab !== 'settings' && activeTab !== 'cte' && (
           <div className="p-4 bg-white rounded-2xl border border-mro-line shadow-card mb-6 space-y-2">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-10 gap-3 text-xs items-end">
               {/* 1. Buscar DT */}
@@ -793,6 +807,10 @@ export default function Home() {
             horizonDays={filters.horizonDays}
             onSelectDt={setSelectedDt}
           />
+        )}
+
+        {activeTab === 'cte' && (
+          <CteKanbanTab />
         )}
 
         {activeTab === 'settings' && (
